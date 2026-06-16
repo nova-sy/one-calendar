@@ -16,6 +16,7 @@ class CalendarSyncPage extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -41,15 +42,18 @@ class CalendarSyncPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _card('Status', _statusText, Icons.check_circle_outline),
-                  _card('Last Sync', _lastSync, Icons.schedule),
-                  _card('Sync Window', '${service.configuration.syncWindowDays} days',
-                      Icons.calendar_today),
-                  _card('Last Changes', _changes, Icons.swap_horiz),
+                  Expanded(child: _card('Status', _statusText, Icons.check_circle_outline)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _card('Last Sync', _lastSync, Icons.schedule)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: _card('Sync Window', '${service.configuration.syncWindowDays} days',
+                          Icons.calendar_today)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _card('Last Changes', _changes, Icons.swap_horiz)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -89,7 +93,6 @@ class CalendarSyncPage extends StatelessWidget {
 
   Widget _card(String title, String value, IconData icon) {
     return Container(
-      width: 200,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.04),

@@ -34,7 +34,8 @@ Future<void> main() async {
   await windowManager.ensureInitialized();
   await windowManager.waitUntilReadyToShow(
     const WindowOptions(
-      size: Size(980, 660),
+      size: Size(1120, 720),
+      minimumSize: Size(960, 600),
       center: true,
       title: 'Neo Toolbox',
     ),

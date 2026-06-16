@@ -19,6 +19,7 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           NavigationRail(
             selectedIndex: _index,
