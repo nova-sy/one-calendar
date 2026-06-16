@@ -34,16 +34,35 @@ class DioFeishuHttpClient implements FeishuHttpClient {
     Map<String, String> headers = const {},
     String? body,
   }) async {
-    final res = await _dio.request<String>(
-      url,
-      data: body,
-      options: Options(
-        method: method,
-        headers: headers,
-        responseType: ResponseType.plain,
-        validateStatus: (_) => true,
-      ),
-    );
-    return FeishuHttpResponse(res.statusCode ?? 0, res.data ?? '');
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
+      try {
+        final res = await _dio.request<String>(
+          url,
+          data: body,
+          options: Options(
+            method: method,
+            headers: headers,
+            responseType: ResponseType.plain,
+            validateStatus: (_) => true,
+          ),
+        );
+        return FeishuHttpResponse(res.statusCode ?? 0, res.data ?? '');
+      } on DioException catch (e) {
+        lastError = e;
+        final msg = e.error?.toString() ?? e.message ?? '';
+        final transient = e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            msg.contains('HandshakeException') ||
+            msg.contains('Connection terminated') ||
+            msg.contains('Connection reset');
+        if (!transient) rethrow;
+      }
+    }
+    throw lastError ?? Exception('Feishu request failed');
   }
 }

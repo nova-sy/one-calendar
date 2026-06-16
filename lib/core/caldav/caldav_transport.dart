@@ -38,20 +38,45 @@ class DioCalDavTransport implements CalDavTransport {
     Map<String, String> headers = const {},
     String? body,
   }) async {
-    final response = await _dio.request<String>(
-      url,
-      data: body,
-      options: Options(
-        method: method,
-        headers: {
-          'User-Agent': 'NeoToolbox CalDAV',
-          ...headers,
-        },
-        responseType: ResponseType.plain,
-        validateStatus: (_) => true,
-      ),
-    );
-    final loc = response.headers.value('location');
-    return CalDavResponse(response.statusCode ?? 0, response.data ?? '', location: loc);
+    Object? lastError;
+    // Retry transient connection/TLS-handshake failures.
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+      }
+      try {
+        final response = await _dio.request<String>(
+          url,
+          data: body,
+          options: Options(
+            method: method,
+            headers: {
+              'User-Agent': 'NeoToolbox CalDAV',
+              ...headers,
+            },
+            responseType: ResponseType.plain,
+            validateStatus: (_) => true,
+          ),
+        );
+        final loc = response.headers.value('location');
+        return CalDavResponse(response.statusCode ?? 0, response.data ?? '', location: loc);
+      } on DioException catch (e) {
+        lastError = e;
+        if (!_isTransient(e)) rethrow;
+      }
+    }
+    throw lastError ?? Exception('CalDAV request failed');
+  }
+
+  bool _isTransient(DioException e) {
+    if (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return true;
+    }
+    final msg = e.error?.toString() ?? e.message ?? '';
+    return msg.contains('HandshakeException') ||
+        msg.contains('Connection terminated') ||
+        msg.contains('Connection reset');
   }
 }
