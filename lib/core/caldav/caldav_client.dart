@@ -81,7 +81,7 @@ class CalDavCalendarClient implements CalendarEventFetcher {
   }
 }
 
-/// Extracts and entity-decodes <calendar-data> payloads from a multistatus body.
+/// Extracts and entity-decodes `calendar-data` payloads from a multistatus body.
 List<String> extractCalendarData(String body) {
   final pattern = RegExp(
     r'<[^>]*calendar-data[^>]*>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</[^>]*calendar-data>',

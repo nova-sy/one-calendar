@@ -1,122 +1,120 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-void main() {
-  runApp(const MyApp());
+import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
+
+import 'core/feishu/feishu_api_client.dart';
+import 'core/feishu/feishu_token_manager.dart';
+import 'core/security/encrypted_secret_store.dart';
+import 'core/security/master_key.dart';
+import 'core/service/calendar_sync_service.dart';
+import 'core/storage/state_store.dart';
+import 'ui/dashboard.dart';
+
+Future<CalendarSyncService> _buildService() async {
+  final base = await getApplicationSupportDirectory();
+  final dir = Directory(p.join(base.path, 'NeoToolbox'));
+  await dir.create(recursive: true);
+  final store = StateStore.open(p.join(dir.path, 'state.sqlite3'));
+  final secrets =
+      EncryptedSecretStore(store, FileMasterKeyProvider(p.join(dir.path, 'master.key')));
+  final tokenManager = FeishuTokenManager(credentials: secrets);
+  final feishu = FeishuApiClient(tokens: tokenManager);
+  final service = CalendarSyncService(
+      store: store, secrets: secrets, feishu: feishu, tokenManager: tokenManager);
+  await service.loadSettings();
+  return service;
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+  await windowManager.waitUntilReadyToShow(
+    const WindowOptions(
+      size: Size(980, 660),
+      center: true,
+      title: 'Neo Toolbox',
+    ),
+    () async {
+      await windowManager.show();
+    },
+  );
+  await windowManager.setPreventClose(true);
 
-  // This widget is the root of your application.
+  final service = await _buildService();
+  runApp(NeoToolboxApp(service: service));
+}
+
+class NeoToolboxApp extends StatefulWidget {
+  final CalendarSyncService service;
+  const NeoToolboxApp({super.key, required this.service});
+
+  @override
+  State<NeoToolboxApp> createState() => _NeoToolboxAppState();
+}
+
+class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, WindowListener {
+  @override
+  void initState() {
+    super.initState();
+    trayManager.addListener(this);
+    windowManager.addListener(this);
+    _initTray();
+  }
+
+  Future<void> _initTray() async {
+    await trayManager.setIcon('assets/tray_icon.png');
+    await trayManager.setContextMenu(Menu(items: [
+      MenuItem(key: 'open', label: 'Open Dashboard'),
+      MenuItem(key: 'sync', label: 'Sync Now'),
+      MenuItem.separator(),
+      MenuItem(key: 'quit', label: 'Quit Neo Toolbox'),
+    ]));
+  }
+
+  @override
+  void onTrayIconMouseDown() => trayManager.popUpContextMenu();
+
+  @override
+  void onTrayMenuItemClick(MenuItem item) async {
+    switch (item.key) {
+      case 'open':
+        await windowManager.show();
+        await windowManager.focus();
+      case 'sync':
+        widget.service.syncNow();
+      case 'quit':
+        await windowManager.setPreventClose(false);
+        await windowManager.destroy();
+    }
+  }
+
+  @override
+  void onWindowClose() async {
+    // Keep running in the tray instead of quitting.
+    await windowManager.hide();
+  }
+
+  @override
+  void dispose() {
+    trayManager.removeListener(this);
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Neo Toolbox',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorSchemeSeed: const Color(0xFF2E7CF6),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
+      home: Dashboard(service: widget.service),
     );
   }
 }
