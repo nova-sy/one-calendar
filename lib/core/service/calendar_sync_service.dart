@@ -70,11 +70,20 @@ class CalendarSyncService extends ChangeNotifier {
         now = now ?? DateTime.now;
 
   void _log(LogLevel level, String message) {
-    recentLogs.insert(0, RuntimeLog(now(), level, message));
+    final ts = now();
+    recentLogs.insert(0, RuntimeLog(ts, level, message));
     if (recentLogs.length > 100) recentLogs.removeLast();
+    store.appendLog(ts, level.name, message);
   }
 
   Future<void> loadSettings() async {
+    recentLogs
+      ..clear()
+      ..addAll(store.loadRecentLogs(limit: 100).map((l) => RuntimeLog(
+            l.ts,
+            LogLevel.values.firstWhere((e) => e.name == l.level, orElse: () => LogLevel.info),
+            l.message,
+          )));
     final g = store.loadGlobalSettings();
     final sources = store.loadCalendarSources();
     configuration = CalendarSyncConfiguration(

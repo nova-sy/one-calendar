@@ -74,6 +74,32 @@ class StateStore {
         ciphertext BLOB NOT NULL,
         nonce BLOB NOT NULL
       )''');
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS runtime_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts REAL NOT NULL,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL
+      )''');
+  }
+
+  void appendLog(DateTime ts, String level, String message) {
+    _db.execute('INSERT INTO runtime_logs (ts, level, message) VALUES (?, ?, ?)',
+        [ts.millisecondsSinceEpoch / 1000.0, level, message]);
+    // Keep only the most recent 200.
+    _db.execute(
+        'DELETE FROM runtime_logs WHERE id NOT IN (SELECT id FROM runtime_logs ORDER BY id DESC LIMIT 200)');
+  }
+
+  List<({DateTime ts, String level, String message})> loadRecentLogs({int limit = 100}) {
+    final r = _db.select('SELECT * FROM runtime_logs ORDER BY id DESC LIMIT ?', [limit]);
+    return r
+        .map((row) => (
+              ts: DateTime.fromMillisecondsSinceEpoch(((row['ts'] as double) * 1000).round()),
+              level: row['level'] as String,
+              message: row['message'] as String,
+            ))
+        .toList();
   }
 
   // --- Global settings ---

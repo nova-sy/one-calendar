@@ -74,6 +74,17 @@ void main() {
     store.dispose();
   });
 
+  test('runtime logs persist and load recent', () {
+    final store = StateStore.inMemory();
+    store.appendLog(DateTime.fromMillisecondsSinceEpoch(1000), 'info', 'first');
+    store.appendLog(DateTime.fromMillisecondsSinceEpoch(2000), 'error', 'second');
+    final logs = store.loadRecentLogs(limit: 10);
+    expect(logs.first.message, 'second');
+    expect(logs.first.level, 'error');
+    expect(logs.last.message, 'first');
+    store.dispose();
+  });
+
   test('global settings round trip', () {
     final store = StateStore.inMemory();
     store.saveGlobalSettings(const GlobalSettings(syncIntervalSeconds: 600, syncWindowDays: 7));
