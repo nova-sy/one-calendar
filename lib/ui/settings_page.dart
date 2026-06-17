@@ -71,12 +71,13 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Text('Settings',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+            ),
             _feishuSection(),
-            const SizedBox(height: 20),
-            for (final k in CalendarSourceKind.values) ...[
-              _sourceSection(k),
-              const SizedBox(height: 20),
-            ],
+            for (final k in CalendarSourceKind.values) _sourceSection(k),
             _rulesSection(),
           ],
         ),
@@ -84,24 +85,38 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _section(String title, List<Widget> children) => Container(
-        width: 640,
-        padding: const EdgeInsets.all(16),
+  Widget _section(String title, IconData icon, List<Widget> children, {Widget? trailing}) =>
+      Container(
+        width: 660,
+        margin: const EdgeInsets.only(bottom: 18),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const Spacer(),
+                ?trailing,
+              ],
+            ),
+            const Divider(height: 22),
             ...children,
           ],
         ),
       );
 
-  Widget _feishuSection() => _section('Feishu', [
+  Widget _feishuSection() => _section('Feishu', Icons.cloud_outlined, [
         TextField(
           controller: _appId,
           decoration: const InputDecoration(
@@ -146,12 +161,32 @@ class _SettingsPageState extends State<SettingsPage> {
       ...service.availableCalendars
           .map((cal) => DropdownMenuItem(value: cal.id, child: Text(cal.summary))),
     ];
-    return _section(kind.displayName, [
-      TextField(
-        controller: c.username,
-        decoration: const InputDecoration(
-            labelText: 'CalDAV username', border: OutlineInputBorder(), isDense: true),
-      ),
+    return _section(
+      kind.displayName,
+      Icons.calendar_month_outlined,
+      [
+        Container(
+          padding: const EdgeInsets.all(10),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: 15, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(kind.setupHint,
+                      style: const TextStyle(fontSize: 12, color: Colors.black54))),
+            ],
+          ),
+        ),
+        TextField(
+          controller: c.username,
+          decoration: const InputDecoration(
+              labelText: 'CalDAV username', border: OutlineInputBorder(), isDense: true),
+        ),
       const SizedBox(height: 10),
       RevealableSecretField(label: 'CalDAV password', controller: c.password),
       const SizedBox(height: 10),
@@ -180,7 +215,11 @@ class _SettingsPageState extends State<SettingsPage> {
       const SizedBox(height: 8),
       FilledButton(
           onPressed: () => _saveSource(kind), child: Text('Save ${kind.displayName}')),
-    ]);
+    ], trailing: TextButton.icon(
+      onPressed: () => launchUrl(Uri.parse(kind.docUrl), mode: LaunchMode.externalApplication),
+      icon: const Icon(Icons.help_outline, size: 15),
+      label: const Text('How to get credentials'),
+    ));
   }
 
   Widget _badge(String label, bool ok) => Row(mainAxisSize: MainAxisSize.min, children: [
@@ -189,7 +228,7 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ]);
 
-  Widget _rulesSection() => _section('Sync rules', [
+  Widget _rulesSection() => _section('Sync rules', Icons.tune, [
         DropdownButtonFormField<int>(
           initialValue: _interval,
           decoration: const InputDecoration(

@@ -37,7 +37,7 @@ Future<void> main() async {
       size: Size(1120, 720),
       minimumSize: Size(960, 600),
       center: true,
-      title: 'Neo Toolbox',
+      title: 'ONE CALENDAR',
     ),
     () async {
       await windowManager.show();
@@ -72,7 +72,7 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
       MenuItem(key: 'open', label: 'Open Dashboard'),
       MenuItem(key: 'sync', label: 'Sync Now'),
       MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit Neo Toolbox'),
+      MenuItem(key: 'quit', label: 'Quit ONE CALENDAR'),
     ]));
   }
 
@@ -109,7 +109,7 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Neo Toolbox',
+      title: 'ONE CALENDAR',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF2E7CF6),

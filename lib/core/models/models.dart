@@ -16,6 +16,21 @@ enum CalendarSourceKind {
         CalendarSourceKind.tencent => 'Tencent Meeting',
       };
 
+  /// Official help page explaining how to obtain CalDAV credentials.
+  String get docUrl => switch (this) {
+        CalendarSourceKind.dingtalk =>
+          'https://alidocs.dingtalk.com/i/p/Y7kmbokZp3pgGLq2/docs/qXomz1wAyjKVXzxK6OdE83Y9pRBx5OrE?dontjump=true',
+        CalendarSourceKind.tencent =>
+          'https://meeting.tencent.com/support/topic/1654/index.html',
+      };
+
+  String get setupHint => switch (this) {
+        CalendarSourceKind.dingtalk =>
+          'In DingTalk: Calendar → Settings → enable CalDAV, then copy the username and password.',
+        CalendarSourceKind.tencent =>
+          'In Tencent Meeting: Calendar → CalDAV subscription, then copy the account and password.',
+      };
+
   static CalendarSourceKind fromName(String raw) =>
       CalendarSourceKind.values.firstWhere((k) => k.name == raw,
           orElse: () => CalendarSourceKind.dingtalk);
