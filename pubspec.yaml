@@ -1,7 +1,7 @@
 name: one_calendar
 description: "ONE CALENDAR — calendar sync (DingTalk / Tencent Meeting → Feishu), cross-platform."
 publish_to: 'none'
-version: 1.2.3+6
+version: 1.3.0+7
 
 environment:
   sdk: ^3.12.2
