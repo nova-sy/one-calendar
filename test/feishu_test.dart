@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/feishu/feishu_api_client.dart';
-import 'package:neo_toolbox/core/feishu/feishu_http.dart';
-import 'package:neo_toolbox/core/feishu/feishu_oauth.dart';
-import 'package:neo_toolbox/core/feishu/feishu_token_manager.dart';
-import 'package:neo_toolbox/core/security/encrypted_secret_store.dart';
-import 'package:neo_toolbox/core/security/master_key.dart';
-import 'package:neo_toolbox/core/storage/state_store.dart';
+import 'package:one_calendar/core/feishu/feishu_api_client.dart';
+import 'package:one_calendar/core/feishu/feishu_http.dart';
+import 'package:one_calendar/core/feishu/feishu_oauth.dart';
+import 'package:one_calendar/core/feishu/feishu_token_manager.dart';
+import 'package:one_calendar/core/security/encrypted_secret_store.dart';
+import 'package:one_calendar/core/security/master_key.dart';
+import 'package:one_calendar/core/storage/state_store.dart';
 
 class FakeHttp implements FeishuHttpClient {
   final List<FeishuHttpResponse> queue;

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/security/encrypted_secret_store.dart';
-import 'package:neo_toolbox/core/security/master_key.dart';
-import 'package:neo_toolbox/core/storage/state_store.dart';
+import 'package:one_calendar/core/security/encrypted_secret_store.dart';
+import 'package:one_calendar/core/security/master_key.dart';
+import 'package:one_calendar/core/storage/state_store.dart';
 
 void main() {
   test('encrypt round trip; ciphertext not plaintext', () async {

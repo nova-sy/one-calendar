@@ -21,7 +21,7 @@ jobs:
       - run: flutter build macos --release
       - run: |
           cd build/macos/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent neo_toolbox.app OneCalendar-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent OneCalendar.app OneCalendar-macos.zip
       - uses: softprops/action-gh-release@v2
         with:
           files: build/macos/Build/Products/Release/OneCalendar-macos.zip

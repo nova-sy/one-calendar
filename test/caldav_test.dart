@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/caldav/caldav_client.dart';
-import 'package:neo_toolbox/core/caldav/caldav_discovery.dart';
-import 'package:neo_toolbox/core/caldav/caldav_transport.dart';
-import 'package:neo_toolbox/core/caldav/icalendar_parser.dart';
-import 'package:neo_toolbox/core/models/models.dart';
+import 'package:one_calendar/core/caldav/caldav_client.dart';
+import 'package:one_calendar/core/caldav/caldav_discovery.dart';
+import 'package:one_calendar/core/caldav/caldav_transport.dart';
+import 'package:one_calendar/core/caldav/icalendar_parser.dart';
+import 'package:one_calendar/core/models/models.dart';
 
 class RecordingTransport implements CalDavTransport {
   final String Function(String path) handler;

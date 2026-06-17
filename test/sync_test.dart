@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/caldav/caldav_client.dart';
-import 'package:neo_toolbox/core/feishu/feishu_api_client.dart';
-import 'package:neo_toolbox/core/models/models.dart';
-import 'package:neo_toolbox/core/storage/state_store.dart';
-import 'package:neo_toolbox/core/sync/event_fingerprint.dart';
-import 'package:neo_toolbox/core/sync/sync_engine.dart';
-import 'package:neo_toolbox/core/sync/sync_plan.dart';
+import 'package:one_calendar/core/caldav/caldav_client.dart';
+import 'package:one_calendar/core/feishu/feishu_api_client.dart';
+import 'package:one_calendar/core/models/models.dart';
+import 'package:one_calendar/core/storage/state_store.dart';
+import 'package:one_calendar/core/sync/event_fingerprint.dart';
+import 'package:one_calendar/core/sync/sync_engine.dart';
+import 'package:one_calendar/core/sync/sync_plan.dart';
 
 NormalizedEvent ev(String uid, {String title = 'T'}) => NormalizedEvent(
       uid: uid,

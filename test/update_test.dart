@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/update/update_checker.dart';
+import 'package:one_calendar/core/update/update_checker.dart';
 
 void main() {
   test('isNewer compares semantic versions', () {

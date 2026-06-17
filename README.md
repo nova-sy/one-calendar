@@ -1,4 +1,4 @@
-# Neo Toolbox (Flutter)
+# ONE CALENDAR
 
 Cross-platform (macOS + Windows) calendar sync: **DingTalk** and **Tencent
 Meeting** calendars (CalDAV) → **Feishu**. A Flutter rewrite of the macOS-native

@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:neo_toolbox/core/models/models.dart';
-import 'package:neo_toolbox/core/storage/state_store.dart';
+import 'package:one_calendar/core/models/models.dart';
+import 'package:one_calendar/core/storage/state_store.dart';
 
 void main() {
   test('source kind tag and host', () {
