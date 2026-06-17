@@ -42,9 +42,10 @@ class CalendarSyncPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Expanded(child: _card('Status', _statusText, Icons.check_circle_outline)),
                   const SizedBox(width: 12),
                   Expanded(child: _card('Last Sync', _lastSync, Icons.schedule)),
@@ -54,7 +55,8 @@ class CalendarSyncPage extends StatelessWidget {
                           Icons.calendar_today)),
                   const SizedBox(width: 12),
                   Expanded(child: _card('Last Changes', _changes, Icons.swap_horiz)),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               const Text('Runtime Log',
@@ -95,8 +97,9 @@ class CalendarSyncPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.04),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
