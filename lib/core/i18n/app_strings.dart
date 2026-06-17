@@ -170,4 +170,9 @@ class AppStrings {
       : 'Delete "$name"? Already-synced Feishu events are kept; only this account stops syncing.';
   String get accountEnabled => _zh ? '已启用' : 'Enabled';
   String get accountDisabled => _zh ? '已停用' : 'Disabled';
+  String get feishuRequiredTitle => _zh ? '请先绑定飞书' : 'Connect Feishu first';
+  String get feishuRequiredMessage => _zh
+      ? '添加账户前，请先在「设置 → 飞书」填写 App ID/Secret 并完成授权。'
+      : 'Before adding an account, enter your App ID/Secret and authorize in Settings → Feishu.';
+  String get ok => _zh ? '好的' : 'OK';
 }

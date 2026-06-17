@@ -153,11 +153,34 @@ class _AccountsPageState extends State<AccountsPage> {
   }
 
   Future<void> _openEditor(CalendarSource? existing) async {
+    // Adding a new account requires Feishu to be authorized first.
+    if (existing == null) {
+      await service.refreshFeishuAuthState();
+      if (!service.feishuAuthorized) {
+        if (mounted) await _promptBindFeishu();
+        return;
+      }
+    }
     if (service.feishuAuthorized) await service.loadFeishuCalendars();
     if (!mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AccountEditorDialog(service: service, existing: existing),
+    );
+  }
+
+  Future<void> _promptBindFeishu() async {
+    final s = context.strings;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.cloud_off_outlined),
+        title: Text(s.feishuRequiredTitle),
+        content: Text(s.feishuRequiredMessage),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(s.ok)),
+        ],
+      ),
     );
   }
 }
