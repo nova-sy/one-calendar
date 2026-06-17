@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/i18n/locale_controller.dart';
+
 /// Masked text field with a trailing eye toggle to reveal plaintext.
 class RevealableSecretField extends StatefulWidget {
   final String label;
@@ -24,7 +26,7 @@ class _RevealableSecretFieldState extends State<RevealableSecretField> {
         isDense: true,
         suffixIcon: IconButton(
           icon: Icon(_reveal ? Icons.visibility_off : Icons.visibility),
-          tooltip: _reveal ? 'Hide' : 'Show',
+          tooltip: _reveal ? context.strings.hide : context.strings.show,
           onPressed: () => setState(() => _reveal = !_reveal),
         ),
       ),
