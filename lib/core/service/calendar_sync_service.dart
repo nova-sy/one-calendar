@@ -48,13 +48,13 @@ class CalendarSyncService extends ChangeNotifier {
   CalendarSyncStatus status = const CalendarSyncStatus();
   SyncReport? lastReport;
   List<FeishuCalendar> availableCalendars = [];
-  final Map<CalendarSourceKind, SourceTestResult> sourceTestResults = {};
+  final Map<String, SourceTestResult> sourceTestResults = {}; // keyed by source id
   bool feishuAuthorized = false;
   DependencyCheck dependencyCheck = const DependencyCheck(
       status: DependencyStatus.missing, message: 'Feishu not checked');
   final List<RuntimeLog> recentLogs = [];
 
-  final Map<CalendarSourceKind, SyncEngine> _runners = {};
+  final Map<String, SyncEngine> _runners = {}; // keyed by source id
   bool _running = false;
   Timer? _timer;
 
@@ -95,9 +95,24 @@ class CalendarSyncService extends ChangeNotifier {
       status = CalendarSyncStatus(state: status.state, lastSyncAt: g!.lastSuccessfulSyncAt);
     }
     feishuAuthorized = await tokenManager.isAuthorized();
+    await _migrateLegacyPasswords();
     await _rebuildRunners();
     _restartTimerIfNeeded();
     notifyListeners();
+  }
+
+  /// Migrate pre-multi-account CalDAV passwords stored under `<kind>:<username>`
+  /// to the new per-source key `caldav:<id>` (legacy source has id == kind.name).
+  Future<void> _migrateLegacyPasswords() async {
+    for (final s in configuration.sources) {
+      if (s.id != s.kind.name) continue; // only legacy-shaped sources
+      final hasNew = (await secrets.readPassword(s.credentialAccount())) ?? '';
+      if (hasNew.isNotEmpty) continue;
+      final old = (await secrets.readPassword('${s.kind.name}:${s.username}')) ?? '';
+      if (old.isNotEmpty) {
+        await secrets.savePassword(old, s.credentialAccount());
+      }
+    }
   }
 
   Future<bool> _hasStoredPassword(CalendarSource s) async {
@@ -115,13 +130,13 @@ class CalendarSyncService extends ChangeNotifier {
     _runners.clear();
     for (final s in configuration.sources) {
       if (!(s.isEnabled && s.isConfigured && await _hasStoredPassword(s))) continue;
-      _runners[s.kind] = SyncEngine(
+      _runners[s.id] = SyncEngine(
         settings: configuration.settingsFor(s),
         fetcher: fetcherFor(s.kind),
         writer: feishu,
         store: store,
         password: () async => (await secrets.readPassword(s.credentialAccount())) ?? '',
-        sourceTag: s.kind.mappingTag,
+        sourceTag: s.mappingTag,
         now: now,
       );
     }
@@ -129,23 +144,40 @@ class CalendarSyncService extends ChangeNotifier {
 
   bool get _hasEnabledConfiguredSource => _runners.isNotEmpty;
 
-  Future<void> saveSource(CalendarSource source, String? password,
-      {required int intervalSeconds, required int windowDays}) async {
+  /// Add or update one account (by id). Does not touch global sync rules.
+  Future<void> saveSource(CalendarSource source, {String? password}) async {
     if (password != null && password.isNotEmpty) {
       await secrets.savePassword(password, source.credentialAccount());
     }
     store.saveCalendarSource(source);
-    store.saveGlobalSettings(GlobalSettings(
-        syncIntervalSeconds: intervalSeconds,
-        syncWindowDays: windowDays,
-        lastSuccessfulSyncAt: status.lastSyncAt));
 
-    final others = configuration.sources.where((s) => s.kind != source.kind).toList()
+    final others = configuration.sources.where((s) => s.id != source.id).toList()
       ..add(source);
     others.sort((a, b) => a.id.compareTo(b.id));
     configuration = CalendarSyncConfiguration(
-        sources: others, syncIntervalSeconds: intervalSeconds, syncWindowDays: windowDays);
+        sources: others,
+        syncIntervalSeconds: configuration.syncIntervalSeconds,
+        syncWindowDays: configuration.syncWindowDays);
 
+    await _rebuildRunners();
+    _restartTimerIfNeeded();
+    notifyListeners();
+  }
+
+  /// Delete an account. Strategy A: stop syncing it; already-synced Feishu
+  /// events are left untouched (its event mappings are simply orphaned).
+  Future<void> deleteSource(String id) async {
+    final matches = configuration.sources.where((s) => s.id == id).toList();
+    final source = matches.isEmpty ? null : matches.first;
+    store.deleteCalendarSource(id);
+    if (source != null) {
+      secrets.deletePassword(source.credentialAccount());
+    }
+    configuration = CalendarSyncConfiguration(
+        sources: configuration.sources.where((s) => s.id != id).toList(),
+        syncIntervalSeconds: configuration.syncIntervalSeconds,
+        syncWindowDays: configuration.syncWindowDays);
+    sourceTestResults.remove(id);
     await _rebuildRunners();
     _restartTimerIfNeeded();
     notifyListeners();
@@ -155,7 +187,7 @@ class CalendarSyncService extends ChangeNotifier {
     final feishuSide = await _testFeishuSide();
     final caldavSide = await _testCalDavSide(source, password);
     final result = SourceTestResult(caldavSide, feishuSide);
-    sourceTestResults[source.kind] = result;
+    sourceTestResults[source.id] = result;
     notifyListeners();
     return result;
   }
@@ -280,14 +312,18 @@ class CalendarSyncService extends ChangeNotifier {
 
     var anyFailure = false;
     SyncReport? latest;
+    String labelOf(String id) {
+      final m = configuration.sources.where((s) => s.id == id).toList();
+      return m.isEmpty ? id : m.first.displayLabel;
+    }
     for (final entry in _runners.entries) {
       try {
         final report = await entry.value.run(trigger);
         latest = report;
-        _log(LogLevel.info, '${entry.key.displayName}: ${report.createdCount}/${report.updatedCount}/${report.deletedCount}');
+        _log(LogLevel.info, '${labelOf(entry.key)}: ${report.createdCount}/${report.updatedCount}/${report.deletedCount}');
       } catch (e) {
         anyFailure = true;
-        _log(LogLevel.error, '${entry.key.displayName}: $e');
+        _log(LogLevel.error, '${labelOf(entry.key)}: $e');
       }
     }
     if (latest != null) lastReport = latest;

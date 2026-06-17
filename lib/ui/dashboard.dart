@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/i18n/locale_controller.dart';
 import '../core/service/calendar_sync_service.dart';
 import '../core/update/update_checker.dart';
+import 'accounts_page.dart';
 import 'calendar_sync_page.dart';
 import 'settings_page.dart';
 
@@ -43,14 +44,18 @@ class _DashboardState extends State<Dashboard> {
                     NavigationRailDestination(
                         icon: const Icon(Icons.sync), label: Text(s.navCalendarSync)),
                     NavigationRailDestination(
+                        icon: const Icon(Icons.people_outline), label: Text(s.navAccounts)),
+                    NavigationRailDestination(
                         icon: const Icon(Icons.settings), label: Text(s.navSettings)),
                   ],
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(
-                  child: _index == 0
-                      ? CalendarSyncPage(service: widget.service)
-                      : SettingsPage(service: widget.service),
+                  child: switch (_index) {
+                    0 => CalendarSyncPage(service: widget.service),
+                    1 => AccountsPage(service: widget.service),
+                    _ => SettingsPage(service: widget.service),
+                  },
                 ),
               ],
             ),

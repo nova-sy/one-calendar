@@ -148,4 +148,26 @@ class AppStrings {
             ? '在腾讯会议中：日历 → CalDAV 订阅，然后复制账号和密码。'
             : 'In Tencent Meeting: Calendar → CalDAV subscription, then copy the account and password.',
       };
+
+  // --- Accounts page ---
+  String get navAccounts => _zh ? '账户' : 'Accounts';
+  String get accountsTitle => _zh ? '账户' : 'Accounts';
+  String get addAccount => _zh ? '添加账户' : 'Add account';
+  String get editAccount => _zh ? '编辑账户' : 'Edit account';
+  String get newAccount => _zh ? '新建账户' : 'New account';
+  String get accountLabel => _zh ? '账户名称' : 'Account name';
+  String get accountLabelHint => _zh ? '如：工作钉钉' : 'e.g. Work DingTalk';
+  String get accountType => _zh ? '类型' : 'Type';
+  String get noAccounts =>
+      _zh ? '还没有账户。点「添加账户」开始。' : 'No accounts yet. Click "Add account" to begin.';
+  String get save => _zh ? '保存' : 'Save';
+  String get cancel => _zh ? '取消' : 'Cancel';
+  String get edit => _zh ? '编辑' : 'Edit';
+  String get delete => _zh ? '删除' : 'Delete';
+  String get deleteAccountTitle => _zh ? '删除账户' : 'Delete account';
+  String deleteAccountConfirm(String name) => _zh
+      ? '确定删除「$name」？已同步到飞书的日程会保留，仅停止该账户的同步。'
+      : 'Delete "$name"? Already-synced Feishu events are kept; only this account stops syncing.';
+  String get accountEnabled => _zh ? '已启用' : 'Enabled';
+  String get accountDisabled => _zh ? '已停用' : 'Disabled';
 }

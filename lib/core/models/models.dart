@@ -37,32 +37,65 @@ enum CalendarSourceKind {
 }
 
 class CalendarSource {
+  final String id; // unique; legacy-migrated source uses kind.name
   final CalendarSourceKind kind;
+  final String label; // user-editable display name
   final String username;
   final String feishuCalendarId;
   final bool isEnabled;
   final String? resolvedCollectionUrl;
 
   const CalendarSource({
+    required this.id,
     required this.kind,
+    this.label = '',
     required this.username,
     required this.feishuCalendarId,
     required this.isEnabled,
     this.resolvedCollectionUrl,
   });
 
-  String get id => kind.name;
+  /// Create a brand-new account with a unique id.
+  factory CalendarSource.create({
+    required CalendarSourceKind kind,
+    String label = '',
+    String username = '',
+    String feishuCalendarId = '',
+    bool isEnabled = false,
+  }) {
+    final rand = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+    return CalendarSource(
+      id: '${kind.name}-$rand',
+      kind: kind,
+      label: label,
+      username: username,
+      feishuCalendarId: feishuCalendarId,
+      isEnabled: isEnabled,
+    );
+  }
+
   bool get isConfigured => username.isNotEmpty && feishuCalendarId.isNotEmpty;
-  String credentialAccount() => '${kind.name}:$username';
+
+  /// Per-account event-mapping isolation tag. The legacy single source per kind
+  /// (id == kind.name) keeps the old tag so already-synced events stay mapped.
+  String get mappingTag =>
+      id == kind.name ? 'neo-toolbox.${kind.name}' : 'neo-toolbox.${kind.name}.$id';
+
+  String credentialAccount() => 'caldav:$id';
+
+  String get displayLabel => label.isNotEmpty ? label : kind.displayName;
 
   CalendarSource copyWith({
+    String? label,
     String? username,
     String? feishuCalendarId,
     bool? isEnabled,
     String? resolvedCollectionUrl,
   }) =>
       CalendarSource(
+        id: id,
         kind: kind,
+        label: label ?? this.label,
         username: username ?? this.username,
         feishuCalendarId: feishuCalendarId ?? this.feishuCalendarId,
         isEnabled: isEnabled ?? this.isEnabled,
@@ -72,7 +105,9 @@ class CalendarSource {
   @override
   bool operator ==(Object other) =>
       other is CalendarSource &&
+      other.id == id &&
       other.kind == kind &&
+      other.label == label &&
       other.username == username &&
       other.feishuCalendarId == feishuCalendarId &&
       other.isEnabled == isEnabled &&
@@ -80,7 +115,7 @@ class CalendarSource {
 
   @override
   int get hashCode =>
-      Object.hash(kind, username, feishuCalendarId, isEnabled, resolvedCollectionUrl);
+      Object.hash(id, kind, label, username, feishuCalendarId, isEnabled, resolvedCollectionUrl);
 }
 
 class CalendarSyncSettings {

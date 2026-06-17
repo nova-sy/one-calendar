@@ -49,11 +49,17 @@ class StateStore {
       CREATE TABLE IF NOT EXISTS calendar_sources (
         source_id TEXT PRIMARY KEY,
         kind TEXT NOT NULL,
+        label TEXT NOT NULL DEFAULT '',
         username TEXT NOT NULL,
         feishu_calendar_id TEXT NOT NULL,
         is_enabled INTEGER NOT NULL,
         resolved_collection_url TEXT
       )''');
+    // Add `label` to pre-existing tables created before multi-account support.
+    final cols = _db.select('PRAGMA table_info(calendar_sources)');
+    if (!cols.any((r) => r['name'] == 'label')) {
+      _db.execute("ALTER TABLE calendar_sources ADD COLUMN label TEXT NOT NULL DEFAULT ''");
+    }
     _db.execute('''
       CREATE TABLE IF NOT EXISTS event_mappings (
         mapping_key TEXT PRIMARY KEY,
@@ -165,14 +171,14 @@ class StateStore {
 
   void saveCalendarSource(CalendarSource s) {
     _db.execute(
-      '''INSERT INTO calendar_sources (source_id, kind, username, feishu_calendar_id, is_enabled, resolved_collection_url)
-         VALUES (?, ?, ?, ?, ?, ?)
+      '''INSERT INTO calendar_sources (source_id, kind, label, username, feishu_calendar_id, is_enabled, resolved_collection_url)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(source_id) DO UPDATE SET
-           kind = excluded.kind, username = excluded.username,
+           kind = excluded.kind, label = excluded.label, username = excluded.username,
            feishu_calendar_id = excluded.feishu_calendar_id,
            is_enabled = excluded.is_enabled,
            resolved_collection_url = excluded.resolved_collection_url''',
-      [s.id, s.kind.name, s.username, s.feishuCalendarId, s.isEnabled ? 1 : 0, s.resolvedCollectionUrl],
+      [s.id, s.kind.name, s.label, s.username, s.feishuCalendarId, s.isEnabled ? 1 : 0, s.resolvedCollectionUrl],
     );
   }
 
@@ -180,7 +186,9 @@ class StateStore {
     final r = _db.select('SELECT * FROM calendar_sources ORDER BY source_id');
     return r
         .map((row) => CalendarSource(
+              id: row['source_id'] as String,
               kind: CalendarSourceKind.fromName(row['kind'] as String),
+              label: (row['label'] as String?) ?? '',
               username: row['username'] as String,
               feishuCalendarId: row['feishu_calendar_id'] as String,
               isEnabled: (row['is_enabled'] as int) == 1,

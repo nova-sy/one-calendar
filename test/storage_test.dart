@@ -14,6 +14,7 @@ void main() {
 
   test('derived per-source settings', () {
     const source = CalendarSource(
+        id: 'dingtalk',
         kind: CalendarSourceKind.dingtalk,
         username: 'alice',
         feishuCalendarId: 'cal-1',
@@ -30,6 +31,7 @@ void main() {
   test('calendar source persistence round trip', () {
     final store = StateStore.inMemory();
     const source = CalendarSource(
+        id: 'tencent',
         kind: CalendarSourceKind.tencent,
         username: 'Cal_x',
         feishuCalendarId: 'c9',
