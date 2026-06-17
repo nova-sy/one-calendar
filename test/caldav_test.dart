@@ -41,6 +41,17 @@ END:VCALENDAR&#13;
     expect(events.first.title, 'Design & Review');
   });
 
+  test('parses hex-entity calendar-data (Tencent &#xD;&#xA;)', () {
+    const body = '''
+<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
+<d:response><d:propstat><d:prop>
+<c:calendar-data>BEGIN:VCALENDAR&#xD;&#xA;BEGIN:VEVENT&#xD;&#xA;UID:tx-1&#xD;&#xA;SUMMARY:Tencent Meeting&#xD;&#xA;DTSTART:20260617T020000Z&#xD;&#xA;DTEND:20260617T030000Z&#xD;&#xA;END:VEVENT&#xD;&#xA;END:VCALENDAR&#xD;&#xA;</c:calendar-data>
+</d:prop></d:propstat></d:response></d:multistatus>''';
+    final events = extractCalendarData(body).expand(ICalendarParser().parse).toList();
+    expect(events.map((e) => e.uid), ['tx-1']);
+    expect(events.first.title, 'Tencent Meeting');
+  });
+
   test('fixed-path client targets primary collection', () async {
     final transport = RecordingTransport((_) =>
         '<d:multistatus xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"></d:multistatus>');

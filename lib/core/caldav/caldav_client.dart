@@ -94,8 +94,15 @@ List<String> extractCalendarData(String body) {
 }
 
 String decodeXml(String value) => value
+    // Decimal numeric entities (DingTalk) and hex numeric entities (Tencent).
     .replaceAll('&#13;', '\r')
     .replaceAll('&#10;', '\n')
+    .replaceAll('&#xD;', '\r')
+    .replaceAll('&#xd;', '\r')
+    .replaceAll('&#xA;', '\n')
+    .replaceAll('&#xa;', '\n')
+    .replaceAll('&#9;', '\t')
+    .replaceAll('&#x9;', '\t')
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')
