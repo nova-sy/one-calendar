@@ -111,13 +111,16 @@ class FeishuOAuth {
         body: jsonEncode(body));
     final j = jsonDecode(res.body) as Map<String, dynamic>;
     final code = j['code'] as int?;
+    final msg = (j['msg'] as String?) ?? (j['error_description'] as String?) ?? (j['error'] as String?);
     if (code != null && code != 0) {
-      throw FeishuAuthException((j['msg'] as String?) ?? 'oauth error $code');
+      final detail = msg ?? 'see Feishu app redirect URL config';
+      throw FeishuAuthException('oauth error $code: $detail (redirect_uri must be '
+          'http://127.0.0.1:17865/callback, registered in the Feishu app)');
     }
     final at = j['access_token'] as String?;
     final rt = j['refresh_token'] as String?;
     if (at == null || rt == null) {
-      throw FeishuAuthException((j['msg'] as String?) ?? 'missing tokens');
+      throw FeishuAuthException(msg ?? 'missing tokens in response: ${res.body}');
     }
     final t = now();
     return FeishuTokenBundle(
