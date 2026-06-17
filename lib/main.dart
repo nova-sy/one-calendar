@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -12,6 +14,7 @@ import 'core/security/encrypted_secret_store.dart';
 import 'core/security/master_key.dart';
 import 'core/service/calendar_sync_service.dart';
 import 'core/storage/state_store.dart';
+import 'core/update/update_checker.dart';
 import 'ui/dashboard.dart';
 
 Future<CalendarSyncService> _buildService() async {
@@ -58,12 +61,28 @@ class NeoToolboxApp extends StatefulWidget {
 }
 
 class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, WindowListener {
+  final ValueNotifier<UpdateInfo?> _update = ValueNotifier(null);
+  Timer? _updateTimer;
+
   @override
   void initState() {
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
     _initTray();
+    _startUpdateChecks();
+  }
+
+  Future<void> _startUpdateChecks() async {
+    final info = await PackageInfo.fromPlatform();
+    final checker = UpdateChecker(currentVersion: info.version);
+    Future<void> run() async {
+      try {
+        _update.value = await checker.check();
+      } catch (_) {}
+    }
+    await run();
+    _updateTimer = Timer.periodic(const Duration(hours: 24), (_) => run());
   }
 
   Future<void> _initTray() async {
@@ -101,6 +120,7 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
 
   @override
   void dispose() {
+    _updateTimer?.cancel();
     trayManager.removeListener(this);
     windowManager.removeListener(this);
     super.dispose();
@@ -115,7 +135,7 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
         colorSchemeSeed: const Color(0xFF2E7CF6),
         useMaterial3: true,
       ),
-      home: Dashboard(service: widget.service),
+      home: Dashboard(service: widget.service, update: _update),
     );
   }
 }
