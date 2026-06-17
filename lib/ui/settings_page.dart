@@ -247,7 +247,7 @@ class _SettingsPageState extends State<SettingsPage> {
             DropdownMenuItem(value: 1800, child: Text('30 minutes')),
             DropdownMenuItem(value: 3600, child: Text('60 minutes')),
           ],
-          onChanged: (v) => setState(() => _interval = v ?? 1800),
+          onChanged: (v) => _applyRules(interval: v),
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<int>(
@@ -259,9 +259,20 @@ class _SettingsPageState extends State<SettingsPage> {
             DropdownMenuItem(value: 30, child: Text('30 days')),
             DropdownMenuItem(value: 90, child: Text('90 days')),
           ],
-          onChanged: (v) => setState(() => _window = v ?? 30),
+          onChanged: (v) => _applyRules(window: v),
         ),
+        const SizedBox(height: 6),
+        const Text('Changes are saved automatically and the timer reschedules.',
+            style: TextStyle(fontSize: 11, color: Colors.grey)),
       ]);
+
+  Future<void> _applyRules({int? interval, int? window}) async {
+    setState(() {
+      if (interval != null) _interval = interval;
+      if (window != null) _window = window;
+    });
+    await service.setSyncRules(intervalSeconds: _interval, windowDays: _window);
+  }
 
   Widget _aboutSection() => _section('About', Icons.info_outline, [
         Row(children: [

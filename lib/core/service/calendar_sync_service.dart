@@ -201,6 +201,25 @@ class CalendarSyncService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persist global sync rules (interval/window) immediately and reschedule.
+  Future<void> setSyncRules({required int intervalSeconds, required int windowDays}) async {
+    final prior = store.loadGlobalSettings();
+    store.saveGlobalSettings(GlobalSettings(
+      syncIntervalSeconds: intervalSeconds,
+      syncWindowDays: windowDays,
+      lastSuccessfulSyncAt: prior?.lastSuccessfulSyncAt,
+      consecutiveFailureCount: prior?.consecutiveFailureCount ?? 0,
+    ));
+    configuration = CalendarSyncConfiguration(
+      sources: configuration.sources,
+      syncIntervalSeconds: intervalSeconds,
+      syncWindowDays: windowDays,
+    );
+    await _rebuildRunners(); // window change affects each engine's fetch window
+    _restartTimerIfNeeded(); // interval change reschedules the timer
+    notifyListeners();
+  }
+
   // --- Feishu app ---
 
   Future<String> feishuAppId() async => (await tokenManager.appId()) ?? '';
