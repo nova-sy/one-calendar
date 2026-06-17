@@ -69,7 +69,10 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
-    _initTray();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await _initTray();
+    });
     _startUpdateChecks();
   }
 
@@ -86,13 +89,21 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
   }
 
   Future<void> _initTray() async {
-    await trayManager.setIcon('assets/tray_icon.png');
-    await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'open', label: 'Open Dashboard'),
-      MenuItem(key: 'sync', label: 'Sync Now'),
-      MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit ONE CALENDAR'),
-    ]));
+    try {
+      await trayManager.setIcon(
+        'assets/tray_icon.png',
+        isTemplate: Platform.isMacOS,
+      );
+      await trayManager.setToolTip('ONE CALENDAR');
+      await trayManager.setContextMenu(Menu(items: [
+        MenuItem(key: 'open', label: 'Open Dashboard'),
+        MenuItem(key: 'sync', label: 'Sync Now'),
+        MenuItem.separator(),
+        MenuItem(key: 'quit', label: 'Quit ONE CALENDAR'),
+      ]));
+    } catch (e) {
+      debugPrint('tray init failed: $e');
+    }
   }
 
   @override
