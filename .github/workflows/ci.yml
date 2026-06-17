@@ -34,11 +34,11 @@ jobs:
       - name: Zip app
         run: |
           cd build/macos/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent neo_toolbox.app NeoToolbox-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent neo_toolbox.app OneCalendar-macos.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: NeoToolbox-macos
-          path: build/macos/Build/Products/Release/NeoToolbox-macos.zip
+          name: OneCalendar-macos
+          path: build/macos/Build/Products/Release/OneCalendar-macos.zip
 
   build-windows:
     runs-on: windows-latest
@@ -51,8 +51,8 @@ jobs:
       - run: flutter pub get
       - run: flutter build windows --release
       - name: Zip app
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath NeoToolbox-windows.zip
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath OneCalendar-windows.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: NeoToolbox-windows
-          path: NeoToolbox-windows.zip
+          name: OneCalendar-windows
+          path: OneCalendar-windows.zip
