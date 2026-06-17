@@ -197,24 +197,26 @@ class _SettingsPageState extends State<SettingsPage> {
         items: items,
         onChanged: (v) => setState(() => c.calendarId = v ?? ''),
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: 10),
+      if (result != null)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(children: [
+            _badge('CalDAV', result.caldav.ok),
+            const SizedBox(width: 12),
+            _badge('Feishu', result.feishu.ok),
+          ]),
+        ),
       Row(children: [
         Switch(value: c.enabled, onChanged: (v) => setState(() => c.enabled = v)),
         const Text('Enabled'),
-      ]),
-      Row(children: [
+        const SizedBox(width: 16),
         OutlinedButton(
             onPressed: _busy ? null : () => _testSource(kind), child: const Text('Test')),
-        const SizedBox(width: 12),
-        if (result != null) ...[
-          _badge('CalDAV', result.caldav.ok),
-          const SizedBox(width: 10),
-          _badge('Feishu', result.feishu.ok),
-        ],
+        const Spacer(),
+        FilledButton(
+            onPressed: () => _saveSource(kind), child: Text('Save ${kind.displayName}')),
       ]),
-      const SizedBox(height: 8),
-      FilledButton(
-          onPressed: () => _saveSource(kind), child: Text('Save ${kind.displayName}')),
     ], trailing: TextButton.icon(
       onPressed: () => launchUrl(Uri.parse(kind.docUrl), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.help_outline, size: 15),
