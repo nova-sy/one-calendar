@@ -373,6 +373,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _authorize() async {
+    final strings = context.strings;
     setState(() {
       _busy = true;
       _feishuError = null;
@@ -382,7 +383,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     });
     if (err == null) {
-      _feishuStatus = context.strings.authorizedSuccessfully;
+      _feishuStatus = strings.authorizedSuccessfully;
       await service.loadFeishuCalendars();
     } else {
       _feishuError = err;
