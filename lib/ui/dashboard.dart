@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/i18n/locale_controller.dart';
 import '../core/service/calendar_sync_service.dart';
 import '../core/update/update_checker.dart';
 import 'calendar_sync_page.dart';
@@ -21,6 +22,7 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final s = context.strings;
     return Scaffold(
       body: Column(
         children: [
@@ -37,11 +39,11 @@ class _DashboardState extends State<Dashboard> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Image.asset('assets/logo.png', width: 34, height: 34),
                   ),
-                  destinations: const [
+                  destinations: [
                     NavigationRailDestination(
-                        icon: Icon(Icons.sync), label: Text('Calendar Sync')),
+                        icon: const Icon(Icons.sync), label: Text(s.navCalendarSync)),
                     NavigationRailDestination(
-                        icon: Icon(Icons.settings), label: Text('Settings')),
+                        icon: const Icon(Icons.settings), label: Text(s.navSettings)),
                   ],
                 ),
                 const VerticalDivider(width: 1),
@@ -63,19 +65,20 @@ class _DashboardState extends State<Dashboard> {
       valueListenable: widget.update,
       builder: (context, info, _) {
         if (info == null || _dismissed) return const SizedBox.shrink();
+        final s = context.strings;
         return MaterialBanner(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           leading: const Icon(Icons.system_update),
-          content: Text('A new version (${info.version}) is available.'),
+          content: Text(s.updateAvailableBanner(info.version)),
           actions: [
             TextButton(
               onPressed: () => setState(() => _dismissed = true),
-              child: const Text('Later'),
+              child: Text(s.later),
             ),
             FilledButton(
               onPressed: () =>
                   launchUrl(Uri.parse(info.url), mode: LaunchMode.externalApplication),
-              child: const Text('Update'),
+              child: Text(s.update),
             ),
           ],
         );

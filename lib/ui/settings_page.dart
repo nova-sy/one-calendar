@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/i18n/app_strings.dart';
+import '../core/i18n/locale_controller.dart';
 import '../core/models/models.dart';
 import '../core/service/calendar_sync_service.dart';
 import '../core/update/update_checker.dart';
@@ -77,11 +79,12 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Text('Settings',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(context.strings.settingsTitle,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
             ),
+            _languageSection(),
             _feishuSection(),
             for (final k in CalendarSourceKind.values) _sourceSection(k),
             _rulesSection(),
@@ -90,6 +93,25 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  Widget _languageSection() {
+    final controller = context.localeController;
+    final s = controller.strings;
+    return _section(s.languageSection, Icons.translate, [
+      DropdownButtonFormField<AppLanguage>(
+        initialValue: controller.language,
+        decoration: InputDecoration(
+            labelText: s.languageLabel, border: const OutlineInputBorder(), isDense: true),
+        items: [
+          for (final lang in AppLanguage.values)
+            DropdownMenuItem(value: lang, child: Text(lang.nativeName)),
+        ],
+        onChanged: (lang) {
+          if (lang != null) controller.setLanguage(lang);
+        },
+      ),
+    ]);
   }
 
   Widget _section(String title, IconData icon, List<Widget> children, {Widget? trailing}) =>
@@ -123,28 +145,30 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
 
-  Widget _feishuSection() => _section('Feishu', Icons.cloud_outlined, [
+  Widget _feishuSection() {
+    final s = context.strings;
+    return _section(s.feishuSection, Icons.cloud_outlined, [
         TextField(
           controller: _appId,
-          decoration: const InputDecoration(
-              labelText: 'App ID (AK)', border: OutlineInputBorder(), isDense: true),
+          decoration: InputDecoration(
+              labelText: s.appIdLabel, border: const OutlineInputBorder(), isDense: true),
         ),
         const SizedBox(height: 10),
-        RevealableSecretField(label: 'App Secret (SK)', controller: _appSecret),
+        RevealableSecretField(label: s.appSecretLabel, controller: _appSecret),
         const SizedBox(height: 8),
-        const SelectableText(
-            'Register this redirect URI in your Feishu app:\nhttp://127.0.0.1:17865/callback',
-            style: TextStyle(fontSize: 12, color: Colors.grey)),
+        SelectableText(
+            s.redirectUriHint,
+            style: const TextStyle(fontSize: 12, color: Colors.grey)),
         const SizedBox(height: 10),
         Row(children: [
-          OutlinedButton(onPressed: _saveFeishuApp, child: const Text('Save app')),
+          OutlinedButton(onPressed: _saveFeishuApp, child: Text(s.saveApp)),
           const SizedBox(width: 10),
-          FilledButton(onPressed: _busy ? null : _authorize, child: const Text('Authorize')),
+          FilledButton(onPressed: _busy ? null : _authorize, child: Text(s.authorize)),
           const SizedBox(width: 12),
           Icon(service.feishuAuthorized ? Icons.verified : Icons.gpp_maybe,
               size: 16, color: service.feishuAuthorized ? Colors.green : Colors.grey),
           const SizedBox(width: 4),
-          Text(service.feishuAuthorized ? 'Authorized' : 'Not authorized',
+          Text(service.feishuAuthorized ? s.authorized : s.notAuthorized,
               style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ]),
         if (_feishuStatus != null)
@@ -156,12 +180,14 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(_feishuError!, style: const TextStyle(color: Colors.red, fontSize: 12))),
       ]);
+  }
 
   Widget _sourceSection(CalendarSourceKind kind) {
+    final s = context.strings;
     final c = _sources[kind]!;
     final result = service.sourceTestResults[kind];
     final items = <DropdownMenuItem<String>>[
-      const DropdownMenuItem(value: '', child: Text('Not selected')),
+      DropdownMenuItem(value: '', child: Text(s.notSelected)),
       if (c.calendarId.isNotEmpty &&
           !service.availableCalendars.any((cal) => cal.id == c.calendarId))
         DropdownMenuItem(value: c.calendarId, child: Text(c.calendarId)),
@@ -169,7 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
           .map((cal) => DropdownMenuItem(value: cal.id, child: Text(cal.summary))),
     ];
     return _section(
-      kind.displayName,
+      s.sourceName(kind),
       Icons.calendar_month_outlined,
       [
         Container(
@@ -184,23 +210,23 @@ class _SettingsPageState extends State<SettingsPage> {
               const Icon(Icons.info_outline, size: 15, color: Colors.grey),
               const SizedBox(width: 8),
               Expanded(
-                  child: Text(kind.setupHint,
+                  child: Text(s.sourceSetupHint(kind),
                       style: const TextStyle(fontSize: 12, color: Colors.black54))),
             ],
           ),
         ),
         TextField(
           controller: c.username,
-          decoration: const InputDecoration(
-              labelText: 'CalDAV username', border: OutlineInputBorder(), isDense: true),
+          decoration: InputDecoration(
+              labelText: s.caldavUsername, border: const OutlineInputBorder(), isDense: true),
         ),
       const SizedBox(height: 10),
-      RevealableSecretField(label: 'CalDAV password', controller: c.password),
+      RevealableSecretField(label: s.caldavPassword, controller: c.password),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
         initialValue: c.calendarId,
-        decoration: const InputDecoration(
-            labelText: 'Target calendar', border: OutlineInputBorder(), isDense: true),
+        decoration: InputDecoration(
+            labelText: s.targetCalendar, border: const OutlineInputBorder(), isDense: true),
         items: items,
         onChanged: (v) => setState(() => c.calendarId = v ?? ''),
       ),
@@ -216,18 +242,18 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       Row(children: [
         Switch(value: c.enabled, onChanged: (v) => setState(() => c.enabled = v)),
-        const Text('Enabled'),
+        Text(s.enabled),
         const SizedBox(width: 16),
         OutlinedButton(
-            onPressed: _busy ? null : () => _testSource(kind), child: const Text('Test')),
+            onPressed: _busy ? null : () => _testSource(kind), child: Text(s.test)),
         const Spacer(),
         FilledButton(
-            onPressed: () => _saveSource(kind), child: Text('Save ${kind.displayName}')),
+            onPressed: () => _saveSource(kind), child: Text(s.saveNamed(s.sourceName(kind)))),
       ]),
     ], trailing: TextButton.icon(
       onPressed: () => launchUrl(Uri.parse(kind.docUrl), mode: LaunchMode.externalApplication),
       icon: const Icon(Icons.help_outline, size: 15),
-      label: const Text('How to get credentials'),
+      label: Text(s.howToGetCredentials),
     ));
   }
 
@@ -237,34 +263,37 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ]);
 
-  Widget _rulesSection() => _section('Sync rules', Icons.tune, [
+  Widget _rulesSection() {
+    final s = context.strings;
+    return _section(s.syncRulesSection, Icons.tune, [
         DropdownButtonFormField<int>(
           initialValue: _interval,
-          decoration: const InputDecoration(
-              labelText: 'Interval', border: OutlineInputBorder(), isDense: true),
-          items: const [
-            DropdownMenuItem(value: 600, child: Text('10 minutes')),
-            DropdownMenuItem(value: 1800, child: Text('30 minutes')),
-            DropdownMenuItem(value: 3600, child: Text('60 minutes')),
+          decoration: InputDecoration(
+              labelText: s.intervalLabel, border: const OutlineInputBorder(), isDense: true),
+          items: [
+            DropdownMenuItem(value: 600, child: Text(s.minutes10)),
+            DropdownMenuItem(value: 1800, child: Text(s.minutes30)),
+            DropdownMenuItem(value: 3600, child: Text(s.minutes60)),
           ],
           onChanged: (v) => _applyRules(interval: v),
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<int>(
           initialValue: _window,
-          decoration: const InputDecoration(
-              labelText: 'Sync window', border: OutlineInputBorder(), isDense: true),
-          items: const [
-            DropdownMenuItem(value: 7, child: Text('7 days')),
-            DropdownMenuItem(value: 30, child: Text('30 days')),
-            DropdownMenuItem(value: 90, child: Text('90 days')),
+          decoration: InputDecoration(
+              labelText: s.syncWindowLabel, border: const OutlineInputBorder(), isDense: true),
+          items: [
+            DropdownMenuItem(value: 7, child: Text(s.days7)),
+            DropdownMenuItem(value: 30, child: Text(s.days30)),
+            DropdownMenuItem(value: 90, child: Text(s.days90)),
           ],
           onChanged: (v) => _applyRules(window: v),
         ),
         const SizedBox(height: 6),
-        const Text('Changes are saved automatically and the timer reschedules.',
-            style: TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(s.rulesAutoSaved,
+            style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ]);
+  }
 
   Future<void> _applyRules({int? interval, int? window}) async {
     setState(() {
@@ -274,7 +303,9 @@ class _SettingsPageState extends State<SettingsPage> {
     await service.setSyncRules(intervalSeconds: _interval, windowDays: _window);
   }
 
-  Widget _aboutSection() => _section('About', Icons.info_outline, [
+  Widget _aboutSection() {
+    final s = context.strings;
+    return _section(s.aboutSection, Icons.info_outline, [
         Row(children: [
           const Text('ONE CALENDAR', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(width: 8),
@@ -286,10 +317,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 ? const SizedBox(
                     width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.system_update, size: 16),
-            label: const Text('Check for updates'),
+            label: Text(s.checkForUpdates),
           ),
         ]),
       ]);
+  }
 
   Future<void> _checkUpdate() async {
     setState(() => _checkingUpdate = true);
@@ -299,15 +331,16 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (_) {}
     if (!mounted) return;
     setState(() => _checkingUpdate = false);
+    final s = context.strings;
     final messenger = ScaffoldMessenger.of(context);
     if (info == null) {
-      messenger.showSnackBar(const SnackBar(content: Text('You are on the latest version.')));
+      messenger.showSnackBar(SnackBar(content: Text(s.onLatestVersion)));
     } else {
       final captured = info;
       messenger.showSnackBar(SnackBar(
-        content: Text('New version ${captured.version} available'),
+        content: Text(s.newVersionAvailable(captured.version)),
         action: SnackBarAction(
-          label: 'Update',
+          label: s.update,
           onPressed: () =>
               launchUrl(Uri.parse(captured.url), mode: LaunchMode.externalApplication),
         ),
@@ -333,7 +366,7 @@ class _SettingsPageState extends State<SettingsPage> {
     });
     try {
       await service.saveFeishuApp(_appId.text, _appSecret.text);
-      setState(() => _feishuStatus = 'App ID and Secret saved');
+      setState(() => _feishuStatus = context.strings.appCredentialsSaved);
     } catch (e) {
       setState(() => _feishuError = '$e');
     }
@@ -349,7 +382,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     });
     if (err == null) {
-      _feishuStatus = 'Authorized successfully';
+      _feishuStatus = context.strings.authorizedSuccessfully;
       await service.loadFeishuCalendars();
     } else {
       _feishuError = err;

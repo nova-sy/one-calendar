@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -10,6 +12,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'core/feishu/feishu_api_client.dart';
 import 'core/feishu/feishu_token_manager.dart';
+import 'core/i18n/locale_controller.dart';
 import 'core/security/encrypted_secret_store.dart';
 import 'core/security/master_key.dart';
 import 'core/service/calendar_sync_service.dart';
@@ -34,6 +37,7 @@ Future<CalendarSyncService> _buildService() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
   await windowManager.ensureInitialized();
   await windowManager.waitUntilReadyToShow(
     const WindowOptions(
@@ -49,12 +53,14 @@ Future<void> main() async {
   await windowManager.setPreventClose(true);
 
   final service = await _buildService();
-  runApp(NeoToolboxApp(service: service));
+  final locale = LocaleController(service.store);
+  runApp(NeoToolboxApp(service: service, locale: locale));
 }
 
 class NeoToolboxApp extends StatefulWidget {
   final CalendarSyncService service;
-  const NeoToolboxApp({super.key, required this.service});
+  final LocaleController locale;
+  const NeoToolboxApp({super.key, required this.service, required this.locale});
 
   @override
   State<NeoToolboxApp> createState() => _NeoToolboxAppState();
@@ -69,11 +75,17 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
     super.initState();
     trayManager.addListener(this);
     windowManager.addListener(this);
+    widget.locale.addListener(_onLocaleChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future<void>.delayed(const Duration(milliseconds: 600));
       await _initTray();
     });
     _startUpdateChecks();
+  }
+
+  void _onLocaleChanged() {
+    // Rebuild the native tray menu in the newly selected language.
+    _initTray();
   }
 
   Future<void> _startUpdateChecks() async {
@@ -90,16 +102,17 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
 
   Future<void> _initTray() async {
     try {
+      final s = widget.locale.strings;
       await trayManager.setIcon(
         'assets/tray_icon.png',
         isTemplate: Platform.isMacOS,
       );
       await trayManager.setToolTip('ONE CALENDAR');
       await trayManager.setContextMenu(Menu(items: [
-        MenuItem(key: 'open', label: 'Open Dashboard'),
-        MenuItem(key: 'sync', label: 'Sync Now'),
+        MenuItem(key: 'open', label: s.trayOpenDashboard),
+        MenuItem(key: 'sync', label: s.traySyncNow),
         MenuItem.separator(),
-        MenuItem(key: 'quit', label: 'Quit ONE CALENDAR'),
+        MenuItem(key: 'quit', label: s.trayQuit),
       ]));
     } catch (e) {
       debugPrint('tray init failed: $e');
@@ -132,6 +145,7 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
   @override
   void dispose() {
     _updateTimer?.cancel();
+    widget.locale.removeListener(_onLocaleChanged);
     trayManager.removeListener(this);
     windowManager.removeListener(this);
     super.dispose();
@@ -139,14 +153,27 @@ class _NeoToolboxAppState extends State<NeoToolboxApp> with TrayListener, Window
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ONE CALENDAR',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF2E7CF6),
-        useMaterial3: true,
+    return AnimatedBuilder(
+      animation: widget.locale,
+      builder: (context, _) => LocaleScope(
+        controller: widget.locale,
+        child: MaterialApp(
+          title: 'ONE CALENDAR',
+          debugShowCheckedModeBanner: false,
+          locale: widget.locale.locale,
+          supportedLocales: const [Locale('zh'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            colorSchemeSeed: const Color(0xFF2E7CF6),
+            useMaterial3: true,
+          ),
+          home: Dashboard(service: widget.service, update: _update),
+        ),
       ),
-      home: Dashboard(service: widget.service, update: _update),
     );
   }
 }

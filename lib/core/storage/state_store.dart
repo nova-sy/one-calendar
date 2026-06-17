@@ -81,6 +81,26 @@ class StateStore {
         level TEXT NOT NULL,
         message TEXT NOT NULL
       )''');
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS app_preferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )''');
+  }
+
+  // --- App preferences (generic key/value) ---
+
+  String? getPreference(String key) {
+    final r = _db.select('SELECT value FROM app_preferences WHERE key = ?', [key]);
+    if (r.isEmpty) return null;
+    return r.first['value'] as String;
+  }
+
+  void setPreference(String key, String value) {
+    _db.execute(
+      'INSERT INTO app_preferences (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      [key, value],
+    );
   }
 
   void appendLog(DateTime ts, String level, String message) {
