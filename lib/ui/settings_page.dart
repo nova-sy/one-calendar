@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/models/models.dart';
 import '../core/service/calendar_sync_service.dart';
+import '../core/update/update_checker.dart';
 import 'revealable_secret_field.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -31,6 +33,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _busy = false;
   String? _feishuStatus;
   String? _feishuError;
+  String _version = '';
+  bool _checkingUpdate = false;
 
   CalendarSyncService get service => widget.service;
 
@@ -41,6 +45,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _load() async {
+    final pkg = await PackageInfo.fromPlatform();
+    _version = pkg.version;
     _appId.text = await service.feishuAppId();
     _appSecret.text = await service.feishuAppSecretValue();
     _interval = const [600, 1800, 3600].contains(service.configuration.syncIntervalSeconds)
@@ -79,6 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _feishuSection(),
             for (final k in CalendarSourceKind.values) _sourceSection(k),
             _rulesSection(),
+            _aboutSection(),
           ],
         ),
       ),
@@ -255,6 +262,48 @@ class _SettingsPageState extends State<SettingsPage> {
           onChanged: (v) => setState(() => _window = v ?? 30),
         ),
       ]);
+
+  Widget _aboutSection() => _section('About', Icons.info_outline, [
+        Row(children: [
+          const Text('ONE CALENDAR', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(width: 8),
+          Text('v$_version', style: const TextStyle(color: Colors.grey)),
+          const Spacer(),
+          OutlinedButton.icon(
+            onPressed: _checkingUpdate ? null : _checkUpdate,
+            icon: _checkingUpdate
+                ? const SizedBox(
+                    width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.system_update, size: 16),
+            label: const Text('Check for updates'),
+          ),
+        ]),
+      ]);
+
+  Future<void> _checkUpdate() async {
+    setState(() => _checkingUpdate = true);
+    UpdateInfo? info;
+    try {
+      info = await UpdateChecker(currentVersion: _version).check();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _checkingUpdate = false);
+    final messenger = ScaffoldMessenger.of(context);
+    if (info == null) {
+      messenger.showSnackBar(const SnackBar(content: Text('You are on the latest version.')));
+    } else {
+      final captured = info;
+      messenger.showSnackBar(SnackBar(
+        content: Text('New version ${captured.version} available'),
+        action: SnackBarAction(
+          label: 'Update',
+          onPressed: () =>
+              launchUrl(Uri.parse(captured.url), mode: LaunchMode.externalApplication),
+        ),
+        duration: const Duration(seconds: 8),
+      ));
+    }
+  }
 
   CalendarSource _source(CalendarSourceKind kind) {
     final c = _sources[kind]!;
